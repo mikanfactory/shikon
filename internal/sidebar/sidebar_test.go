@@ -20,9 +20,9 @@ func TestBuildItems_SingleRepo(t *testing.T) {
 
 	items := BuildItems(groups)
 
-	// Expected: header + 2 worktrees + add repo + settings = 5
-	if len(items) != 5 {
-		t.Fatalf("len(items) = %d, want 5", len(items))
+	// Expected: header + 2 worktrees + add worktree + add repo + settings = 6
+	if len(items) != 6 {
+		t.Fatalf("len(items) = %d, want 6", len(items))
 	}
 
 	// Group header
@@ -36,9 +36,14 @@ func TestBuildItems_SingleRepo(t *testing.T) {
 	if items[2].Status.Modified != 2 {
 		t.Errorf("items[2].Status.Modified = %d, want 2", items[2].Status.Modified)
 	}
+	// Add worktree
+	assertItem(t, items[3], model.ItemKindAddWorktree, "+ Add worktree", true)
+	if items[3].RepoRootPath != "/code/myrepo" {
+		t.Errorf("items[3].RepoRootPath = %q, want %q", items[3].RepoRootPath, "/code/myrepo")
+	}
 	// Action items
-	assertItem(t, items[3], model.ItemKindAddRepo, "+ Add repository", true)
-	assertItem(t, items[4], model.ItemKindSettings, "Settings", true)
+	assertItem(t, items[4], model.ItemKindAddRepo, "+ Add repository", true)
+	assertItem(t, items[5], model.ItemKindSettings, "Settings", true)
 }
 
 func TestBuildItems_MultipleRepos(t *testing.T) {
@@ -62,18 +67,20 @@ func TestBuildItems_MultipleRepos(t *testing.T) {
 
 	items := BuildItems(groups)
 
-	// header1 + 1 wt + header2 + 2 wts + add + settings = 7
-	if len(items) != 7 {
-		t.Fatalf("len(items) = %d, want 7", len(items))
+	// header1 + 1 wt + add-wt1 + header2 + 2 wts + add-wt2 + add + settings = 9
+	if len(items) != 9 {
+		t.Fatalf("len(items) = %d, want 9", len(items))
 	}
 
 	assertItem(t, items[0], model.ItemKindGroupHeader, "repo1", false)
 	assertItem(t, items[1], model.ItemKindWorktree, "main", true)
-	assertItem(t, items[2], model.ItemKindGroupHeader, "repo2", false)
-	assertItem(t, items[3], model.ItemKindWorktree, "develop", true)
-	assertItem(t, items[4], model.ItemKindWorktree, "hotfix", true)
-	assertItem(t, items[5], model.ItemKindAddRepo, "+ Add repository", true)
-	assertItem(t, items[6], model.ItemKindSettings, "Settings", true)
+	assertItem(t, items[2], model.ItemKindAddWorktree, "+ Add worktree", true)
+	assertItem(t, items[3], model.ItemKindGroupHeader, "repo2", false)
+	assertItem(t, items[4], model.ItemKindWorktree, "develop", true)
+	assertItem(t, items[5], model.ItemKindWorktree, "hotfix", true)
+	assertItem(t, items[6], model.ItemKindAddWorktree, "+ Add worktree", true)
+	assertItem(t, items[7], model.ItemKindAddRepo, "+ Add repository", true)
+	assertItem(t, items[8], model.ItemKindSettings, "Settings", true)
 }
 
 func TestBuildItems_EmptyGroups(t *testing.T) {
@@ -99,13 +106,17 @@ func TestBuildItems_RepoWithNoWorktrees(t *testing.T) {
 
 	items := BuildItems(groups)
 
-	// header + add + settings = 3
-	if len(items) != 3 {
-		t.Fatalf("len(items) = %d, want 3", len(items))
+	// header + add-wt + add + settings = 4
+	if len(items) != 4 {
+		t.Fatalf("len(items) = %d, want 4", len(items))
 	}
 
 	assertItem(t, items[0], model.ItemKindGroupHeader, "empty-repo", false)
-	assertItem(t, items[1], model.ItemKindAddRepo, "+ Add repository", true)
+	assertItem(t, items[1], model.ItemKindAddWorktree, "+ Add worktree", true)
+	if items[1].RepoRootPath != "/code/empty-repo" {
+		t.Errorf("items[1].RepoRootPath = %q, want %q", items[1].RepoRootPath, "/code/empty-repo")
+	}
+	assertItem(t, items[2], model.ItemKindAddRepo, "+ Add repository", true)
 }
 
 func assertItem(t *testing.T, item model.NavigableItem, kind model.ItemKind, label string, selectable bool) {

@@ -25,6 +25,13 @@ func BuildItems(groups []model.RepoGroup) []model.NavigableItem {
 				Status:       wt.Status,
 			})
 		}
+
+		items = append(items, model.NavigableItem{
+			Kind:         model.ItemKindAddWorktree,
+			Label:        "+ Add worktree",
+			Selectable:   true,
+			RepoRootPath: group.RootPath,
+		})
 	}
 
 	items = append(items,
