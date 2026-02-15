@@ -335,6 +335,73 @@ func TestResolveConfigPath(t *testing.T) {
 	})
 }
 
+func TestAppendRepository_Success(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.yaml")
+
+	content := `sidebar_width: 30
+worktree_base_path: ~/shikon
+
+repositories:
+  - name: existing-repo
+    path: /home/user/existing-repo
+`
+	if err := os.WriteFile(cfgPath, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := AppendRepository(cfgPath, "new-repo", "/home/user/new-repo")
+	if err != nil {
+		t.Fatalf("AppendRepository failed: %v", err)
+	}
+
+	cfg, err := LoadFromFile(cfgPath)
+	if err != nil {
+		t.Fatalf("LoadFromFile after append failed: %v", err)
+	}
+	if len(cfg.Repositories) != 2 {
+		t.Fatalf("len(Repositories) = %d, want 2", len(cfg.Repositories))
+	}
+	if cfg.Repositories[1].Name != "new-repo" {
+		t.Errorf("Repositories[1].Name = %q, want %q", cfg.Repositories[1].Name, "new-repo")
+	}
+	if cfg.Repositories[1].Path != "/home/user/new-repo" {
+		t.Errorf("Repositories[1].Path = %q, want %q", cfg.Repositories[1].Path, "/home/user/new-repo")
+	}
+	// Original settings should be preserved
+	if cfg.SidebarWidth != 30 {
+		t.Errorf("SidebarWidth = %d, want 30", cfg.SidebarWidth)
+	}
+}
+
+func TestAppendRepository_Duplicate(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.yaml")
+
+	content := `repositories:
+  - name: my-repo
+    path: /home/user/my-repo
+`
+	if err := os.WriteFile(cfgPath, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := AppendRepository(cfgPath, "my-repo", "/home/user/my-repo")
+	if err == nil {
+		t.Error("expected error for duplicate repository, got nil")
+	}
+	if !strings.Contains(err.Error(), "already") {
+		t.Errorf("error should mention 'already', got: %v", err)
+	}
+}
+
+func TestAppendRepository_FileNotFound(t *testing.T) {
+	err := AppendRepository("/nonexistent/config.yaml", "repo", "/path")
+	if err == nil {
+		t.Error("expected error for nonexistent file, got nil")
+	}
+}
+
 func TestLoad(t *testing.T) {
 	dir := t.TempDir()
 	cfgPath := filepath.Join(dir, "config.yaml")

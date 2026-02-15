@@ -119,6 +119,37 @@ func EnsureDefaultConfig() (string, bool, error) {
 	return configPath, true, nil
 }
 
+// AppendRepository adds a new repository to an existing config file.
+// Returns an error if the path is already registered.
+func AppendRepository(configPath, name, path string) error {
+	cfg, err := LoadFromFile(configPath)
+	if err != nil {
+		return fmt.Errorf("loading config: %w", err)
+	}
+
+	for _, repo := range cfg.Repositories {
+		if repo.Path == path {
+			return fmt.Errorf("repository %q already registered", path)
+		}
+	}
+
+	cfg.Repositories = append(cfg.Repositories, model.RepositoryDef{
+		Name: name,
+		Path: path,
+	})
+
+	data, err := yaml.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("marshaling config: %w", err)
+	}
+
+	if err := os.WriteFile(configPath, data, 0o644); err != nil {
+		return fmt.Errorf("writing config: %w", err)
+	}
+
+	return nil
+}
+
 // Load resolves the config path and loads the config.
 func Load(flagPath string) (model.Config, error) {
 	if flagPath == "" {
