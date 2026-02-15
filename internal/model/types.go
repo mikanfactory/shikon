@@ -27,12 +27,10 @@ type WorktreeInfo struct {
 	Status StatusInfo
 }
 
-// StatusInfo holds the aggregated git status for a worktree.
+// StatusInfo holds the aggregated line change counts for a worktree.
 type StatusInfo struct {
-	Modified  int
-	Added     int
-	Deleted   int
-	Untracked int
+	Insertions int
+	Deletions  int
 }
 
 // ItemKind identifies what type of navigation item this is.
