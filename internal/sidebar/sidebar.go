@@ -22,6 +22,7 @@ func BuildItems(groups []model.RepoGroup) []model.NavigableItem {
 				Label:        wt.Branch,
 				Selectable:   true,
 				WorktreePath: wt.Path,
+				RepoRootPath: group.RootPath,
 				Status:       wt.Status,
 			})
 		}

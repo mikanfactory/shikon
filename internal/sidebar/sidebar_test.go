@@ -32,7 +32,13 @@ func TestBuildItems_SingleRepo(t *testing.T) {
 	if items[1].WorktreePath != "/code/myrepo" {
 		t.Errorf("items[1].WorktreePath = %q, want %q", items[1].WorktreePath, "/code/myrepo")
 	}
+	if items[1].RepoRootPath != "/code/myrepo" {
+		t.Errorf("items[1].RepoRootPath = %q, want %q", items[1].RepoRootPath, "/code/myrepo")
+	}
 	assertItem(t, items[2], model.ItemKindWorktree, "feature-x", true)
+	if items[2].RepoRootPath != "/code/myrepo" {
+		t.Errorf("items[2].RepoRootPath = %q, want %q", items[2].RepoRootPath, "/code/myrepo")
+	}
 	if items[2].Status.Insertions != 20 {
 		t.Errorf("items[2].Status.Insertions = %d, want 20", items[2].Status.Insertions)
 	}
