@@ -89,6 +89,9 @@ func TestUpdate_Enter_SelectsWorktree(t *testing.T) {
 	if updated.selected != "/code/repo1" {
 		t.Errorf("selected = %q, want %q", updated.selected, "/code/repo1")
 	}
+	if updated.SelectedRepoPath() != "/code/repo1" {
+		t.Errorf("SelectedRepoPath() = %q, want %q", updated.SelectedRepoPath(), "/code/repo1")
+	}
 	if cmd == nil {
 		t.Error("expected tea.Quit cmd")
 	}

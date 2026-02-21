@@ -81,8 +81,9 @@ type Model struct {
 	groups       []model.RepoGroup
 	cursor       int
 	sidebarWidth int
-	selected     string
-	quitting     bool
+	selected         string
+	selectedRepoPath string
+	quitting         bool
 	err          error
 	config       model.Config
 	runner       git.CommandRunner
@@ -118,6 +119,11 @@ func NewModel(cfg model.Config, runner git.CommandRunner, configPath string, tmu
 // Selected returns the selected worktree path, if any.
 func (m Model) Selected() string {
 	return m.selected
+}
+
+// SelectedRepoPath returns the repository root path for the selected worktree.
+func (m Model) SelectedRepoPath() string {
+	return m.selectedRepoPath
 }
 
 func (m Model) Init() tea.Cmd {
@@ -224,6 +230,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.cursor = i
 					if item.Kind == model.ItemKindWorktree {
 						m.selected = item.WorktreePath
+						m.selectedRepoPath = item.RepoRootPath
 						return m, tea.Quit
 					}
 					if item.Kind == model.ItemKindAddWorktree {
@@ -270,6 +277,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				item := m.items[m.cursor]
 				if item.Kind == model.ItemKindWorktree {
 					m.selected = item.WorktreePath
+					m.selectedRepoPath = item.RepoRootPath
 					return m, tea.Quit
 				}
 				if item.Kind == model.ItemKindAddWorktree {
