@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -201,9 +202,24 @@ func runWorktreeUI(configPath string) {
 			}
 		}
 
-		// Spawn background rename watcher if there is a pending rename
+		// Launch rename watcher in a tmux background pane
 		if renameInfo := finalModel.PendingRename(selected); renameInfo != nil {
-			spawnRenameWatcher(selected, renameInfo.OriginalBranch, renameInfo.CreatedAt)
+			targetPane := ""
+			if layout.BottomRight2.PaneID != "" {
+				targetPane = layout.BottomRight2.PaneID
+			} else {
+				sessionName := filepath.Base(selected)
+				paneID, err := findIdleBackgroundPane(tmuxRunner, sessionName)
+				if err == nil {
+					targetPane = paneID
+				}
+			}
+			if targetPane != "" {
+				if err := launchRenameWatcher(tmuxRunner, targetPane,
+					selected, renameInfo.OriginalBranch, renameInfo.CreatedAt); err != nil {
+					log.Printf("[branch-rename] watcher launch failed: %v", err)
+				}
+			}
 		}
 
 		return
@@ -245,6 +261,8 @@ func diffUICommand() string {
 }
 
 func runWatchRename() {
+	setupDebugLog()
+
 	fs := flag.NewFlagSet("watch-rename", flag.ExitOnError)
 	wtPath := fs.String("path", "", "absolute path to the worktree")
 	branch := fs.String("branch", "", "original branch name")
@@ -286,29 +304,64 @@ func runWatchRename() {
 		Timeout:      10 * time.Minute,
 	}
 
+	// Create logger that writes to both stdout (visible in tmux pane) and debug.log
+	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lmicroseconds)
+
 	w := rename.NewWatcher(cfg, reader, gen, runner)
+	w.SetLogger(logger)
 	if err := w.Run(); err != nil {
-		// Silently exit; this is a background process
+		logger.Printf("[branch-rename] watcher exited with error: %v", err)
 		os.Exit(1)
 	}
+	logger.Printf("[branch-rename] watcher completed successfully")
 }
 
-func spawnRenameWatcher(worktreePath, branch string, createdAt int64) {
+// launchRenameWatcher sends the watch-rename command to a tmux pane via SendKeys.
+func launchRenameWatcher(runner tmux.Runner, paneID, worktreePath, branch string, createdAt int64) error {
 	exe, err := os.Executable()
 	if err != nil {
-		return
+		return fmt.Errorf("resolving executable: %w", err)
 	}
 
-	cmd := exec.Command(exe, "watch-rename",
-		"--path", worktreePath,
-		"--branch", branch,
-		"--created-at", strconv.FormatInt(createdAt, 10),
+	cmd := fmt.Sprintf("%s watch-rename --path %s --branch %s --created-at %s",
+		shellEscape(exe),
+		shellEscape(worktreePath),
+		shellEscape(branch),
+		strconv.FormatInt(createdAt, 10),
 	)
-	// Detach from parent process
-	cmd.Stdout = nil
-	cmd.Stderr = nil
-	cmd.Stdin = nil
-	_ = cmd.Start()
+
+	return tmux.SendKeys(runner, paneID, cmd)
+}
+
+// findIdleBackgroundPane returns the pane ID of an idle shell pane in the background window.
+func findIdleBackgroundPane(runner tmux.Runner, sessionName string) (string, error) {
+	target := sessionName + ":background-window"
+	out, err := runner.Run("list-panes", "-t", target, "-F", "#{pane_id}\t#{pane_current_command}")
+	if err != nil {
+		return "", fmt.Errorf("listing background panes: %w", err)
+	}
+
+	for _, line := range strings.Split(strings.TrimSpace(out), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		parts := strings.SplitN(line, "\t", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		cmd := strings.ToLower(parts[1])
+		if cmd == "zsh" || cmd == "bash" || cmd == "fish" || cmd == "sh" {
+			return parts[0], nil
+		}
+	}
+
+	return "", fmt.Errorf("no idle background pane found in session %s", sessionName)
+}
+
+// shellEscape wraps a string in single quotes for safe shell usage.
+func shellEscape(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", "'\\''") + "'"
 }
 
 func findRepoByPath(cfg model.Config, repoPath string) model.RepositoryDef {
