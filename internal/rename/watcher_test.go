@@ -1,8 +1,10 @@
 package rename
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 	"testing"
 	"time"
@@ -220,6 +222,80 @@ func TestWatcher_Run_EmptyBranchName(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "empty") {
 		t.Errorf("error should mention empty, got: %v", err)
+	}
+}
+
+func TestWatcher_Run_LogsProgress(t *testing.T) {
+	wtPath := "/Users/shoji/shikon/south-korea"
+	createdAt := time.Now().UnixMilli()
+
+	historyData := makeHistory(wtPath, "add user authentication with JWT tokens", createdAt+1000)
+
+	reader := claude.FakeReader{Data: historyData}
+	gen := branchname.FakeGenerator{Result: "add-jwt-auth"}
+	runner := git.FakeCommandRunner{
+		Outputs: map[string]string{
+			fmt.Sprintf("%s:[branch -m shoji/south-korea shoji/add-jwt-auth]", wtPath): "",
+		},
+	}
+
+	cfg := WatcherConfig{
+		WorktreePath: wtPath,
+		Branch:       "shoji/south-korea",
+		CreatedAt:    createdAt,
+		PollInterval: 10 * time.Millisecond,
+		Timeout:      1 * time.Second,
+	}
+
+	var buf bytes.Buffer
+	logger := log.New(&buf, "", 0)
+
+	w := NewWatcher(cfg, reader, gen, runner)
+	w.SetLogger(logger)
+	err := w.Run()
+	if err != nil {
+		t.Fatalf("expected success, got error: %v", err)
+	}
+
+	output := buf.String()
+	expectedPhrases := []string{
+		"started:",
+		"polling:",
+		"prompt detected:",
+		"renameBranch: generating name",
+		"renameBranch: renaming",
+		"renameBranch: success",
+	}
+	for _, phrase := range expectedPhrases {
+		if !strings.Contains(output, phrase) {
+			t.Errorf("log output should contain %q, got:\n%s", phrase, output)
+		}
+	}
+}
+
+func TestWatcher_FindPrompt_LogsErrors(t *testing.T) {
+	reader := claude.FakeReader{Err: fmt.Errorf("file not found")}
+	gen := branchname.FakeGenerator{Result: "unused"}
+	runner := git.FakeCommandRunner{Outputs: map[string]string{}}
+
+	cfg := WatcherConfig{
+		WorktreePath: "/tmp/test-wt",
+		Branch:       "shoji/test",
+		CreatedAt:    time.Now().UnixMilli(),
+		PollInterval: 10 * time.Millisecond,
+		Timeout:      50 * time.Millisecond,
+	}
+
+	var buf bytes.Buffer
+	logger := log.New(&buf, "", 0)
+
+	w := NewWatcher(cfg, reader, gen, runner)
+	w.SetLogger(logger)
+	_ = w.Run() // will timeout
+
+	output := buf.String()
+	if !strings.Contains(output, "ReadHistoryFile error") {
+		t.Errorf("log output should contain ReadHistoryFile error, got:\n%s", output)
 	}
 }
 
