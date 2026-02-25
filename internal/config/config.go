@@ -38,7 +38,7 @@ func LoadFromFile(path string) (model.Config, error) {
 		if err != nil {
 			return model.Config{}, fmt.Errorf("getting home directory: %w", err)
 		}
-		cfg.WorktreeBasePath = filepath.Join(home, "shikon")
+		cfg.WorktreeBasePath = filepath.Join(home, "yakumo")
 	} else if strings.HasPrefix(cfg.WorktreeBasePath, "~/") {
 		home, err := os.UserHomeDir()
 		if err != nil {
@@ -131,10 +131,10 @@ func EnsureDefaultConfig() (string, bool, error) {
 
 	var content string
 	if gitErr == nil {
-		content = fmt.Sprintf("sidebar_width: 30\nworktree_base_path: ~/shikon\n\nrepositories:\n  - name: %s\n    path: %s\n", name, root)
+		content = fmt.Sprintf("sidebar_width: 30\nworktree_base_path: ~/yakumo\n\nrepositories:\n  - name: %s\n    path: %s\n", name, root)
 		fmt.Fprintf(os.Stderr, "Created default config at %s with repository %q (%s)\n", configPath, name, root)
 	} else {
-		content = "# sidebar_width: 30\n# worktree_base_path: ~/shikon\n#\n# repositories:\n#   - name: my-repo\n#     path: /path/to/my-repo\n"
+		content = "# sidebar_width: 30\n# worktree_base_path: ~/yakumo\n#\n# repositories:\n#   - name: my-repo\n#     path: /path/to/my-repo\n"
 		fmt.Fprintf(os.Stderr, "Created config template at %s -- edit it to add your repositories\n", configPath)
 	}
 

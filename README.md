@@ -53,7 +53,7 @@ yakumo swap-right-below
 
 ```yaml
 sidebar_width: 30
-worktree_base_path: ~/shikon
+worktree_base_path: ~/yakumo
 
 repositories:
   - name: yakumo
@@ -68,7 +68,7 @@ repositories:
 | フィールド | デフォルト | 説明 |
 |---|---|---|
 | `sidebar_width` | `30` | サイドバーの幅 |
-| `worktree_base_path` | `~/shikon` | ワークツリーを作成するベースパス |
+| `worktree_base_path` | `~/yakumo` | ワークツリーを作成するベースパス |
 | `repositories` | (必須) | 管理するリポジトリの一覧 |
 | `repositories[].name` | | リポジトリの表示名 |
 | `repositories[].path` | | リポジトリのパス |
