@@ -42,11 +42,11 @@ func TestIsShellCommand(t *testing.T) {
 func TestEnterOpensVimInIdleCenterPane(t *testing.T) {
 	runner := &tmux.FakeRunner{
 		Outputs: map[string]string{
-			"[display-message -p -t dev:main-window.0 #{pane_current_command}]":        "node",
-			"[display-message -p -t dev:background-window.0 #{pane_current_command}]":  "zsh",
-			"[send-keys -t dev:background-window.0 vim /repo/file.go Enter]":           "",
-			"[swap-pane -d -s dev:background-window.0 -t dev:main-window.0]":           "",
-			"[select-pane -t dev:main-window.0]":                                       "",
+			"[display-message -p -t dev:main-window.0 #{pane_current_command}]":       "node",
+			"[display-message -p -t dev:background-window.0 #{pane_current_command}]": "zsh",
+			"[send-keys -t dev:background-window.0 vim '/repo/file.go' Enter]":        "",
+			"[swap-pane -d -s dev:background-window.0 -t dev:main-window.0]":          "",
+			"[select-pane -t dev:main-window.0]":                                      "",
 		},
 	}
 
@@ -96,8 +96,8 @@ func TestEnterOpensVimInMainCenterPane_NoSwap(t *testing.T) {
 	runner := &tmux.FakeRunner{
 		Outputs: map[string]string{
 			"[display-message -p -t dev:main-window.0 #{pane_current_command}]": "-zsh",
-			"[send-keys -t dev:main-window.0 vim /repo/main.go Enter]":         "",
-			"[select-pane -t dev:main-window.0]":                               "",
+			"[send-keys -t dev:main-window.0 vim '/repo/main.go' Enter]":        "",
+			"[select-pane -t dev:main-window.0]":                                "",
 		},
 	}
 
@@ -131,9 +131,9 @@ func TestEnterOpensVimInMainCenterPane_NoSwap(t *testing.T) {
 func TestEnterAllCenterPanesBusy(t *testing.T) {
 	runner := &tmux.FakeRunner{
 		Outputs: map[string]string{
-			"[display-message -p -t dev:main-window.0 #{pane_current_command}]":        "node",
-			"[display-message -p -t dev:background-window.0 #{pane_current_command}]":  "claude",
-			"[display-message -p -t dev:background-window.1 #{pane_current_command}]":  "vim",
+			"[display-message -p -t dev:main-window.0 #{pane_current_command}]":       "node",
+			"[display-message -p -t dev:background-window.0 #{pane_current_command}]": "claude",
+			"[display-message -p -t dev:background-window.1 #{pane_current_command}]": "vim",
 		},
 	}
 
@@ -164,10 +164,10 @@ func TestEnterFallsBackToCurrentSessionName(t *testing.T) {
 	t.Setenv("TMUX_PANE", "")
 	runner := &tmux.FakeRunner{
 		Outputs: map[string]string{
-			"[display-message -p #{session_name}]":                                     "dev",
-			"[display-message -p -t dev:main-window.0 #{pane_current_command}]":        "-zsh",
-			"[send-keys -t dev:main-window.0 vim /repo/file.go Enter]":                "",
-			"[select-pane -t dev:main-window.0]":                                      "",
+			"[display-message -p #{session_name}]":                              "dev",
+			"[display-message -p -t dev:main-window.0 #{pane_current_command}]": "-zsh",
+			"[send-keys -t dev:main-window.0 vim '/repo/file.go' Enter]":        "",
+			"[select-pane -t dev:main-window.0]":                                "",
 		},
 	}
 
