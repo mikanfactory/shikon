@@ -76,6 +76,10 @@ func runDiffUI() {
 	}
 
 	gitRunner := git.OSCommandRunner{}
+	if _, err := exec.LookPath("gh"); err != nil {
+		fmt.Fprintln(os.Stderr, "error: gh CLI is required for diff-ui")
+		os.Exit(1)
+	}
 	ghRunner := github.OSRunner{}
 
 	var tmuxRunner tmux.Runner
@@ -88,8 +92,9 @@ func runDiffUI() {
 		sessionName, _ = tmux.CurrentSessionName(tmuxRunner)
 	}
 
+	baseRef := resolveBaseRef()
 	p := tea.NewProgram(
-		diffui.NewModel(dir, gitRunner, ghRunner, tmuxRunner, sessionName),
+		diffui.NewModel(dir, gitRunner, ghRunner, tmuxRunner, sessionName, baseRef),
 		tea.WithAltScreen(),
 	)
 	if _, err := p.Run(); err != nil {
@@ -270,6 +275,22 @@ func diffUICommand() string {
 		return ""
 	}
 	return exe + " diff-ui"
+}
+
+func resolveBaseRef() string {
+	baseRef := config.DefaultBaseRef
+	path, err := config.ResolveConfigPath("")
+	if err != nil {
+		return baseRef
+	}
+	cfg, err := config.LoadFromFile(path)
+	if err != nil {
+		return baseRef
+	}
+	if cfg.DefaultBaseRef != "" {
+		baseRef = cfg.DefaultBaseRef
+	}
+	return baseRef
 }
 
 func runWatchRename() {
