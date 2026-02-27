@@ -69,6 +69,8 @@ func main() {
 }
 
 func runDiffUI() {
+	zone.NewGlobal()
+
 	dir, err := os.Getwd()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
@@ -91,6 +93,7 @@ func runDiffUI() {
 	p := tea.NewProgram(
 		diffui.NewModel(dir, gitRunner, ghRunner, tmuxRunner, sessionName),
 		tea.WithAltScreen(),
+		tea.WithMouseCellMotion(),
 	)
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
