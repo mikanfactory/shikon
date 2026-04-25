@@ -113,6 +113,7 @@ type Model struct {
 	groups                 []model.RepoGroup
 	cursor                 int
 	sidebarWidth           int
+	height                 int
 	selected               string
 	selectedRepoPath       string
 	quitting               bool
@@ -155,6 +156,7 @@ func NewModel(cfg model.Config, runner git.CommandRunner, configPath string, tmu
 
 	return Model{
 		sidebarWidth:  cfg.SidebarWidth,
+		height:        24,
 		config:        cfg,
 		runner:        runner,
 		loading:       true,
@@ -197,6 +199,13 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// Capture terminal size for cursor-following scroll. Must run before
+	// modal-mode dispatch so resize events are honored even during modals.
+	if sizeMsg, ok := msg.(tea.WindowSizeMsg); ok {
+		m.height = sizeMsg.Height
+		return m, nil
+	}
+
 	// Handle add-repo input mode
 	if m.addingRepo {
 		return m.updateAddRepoMode(msg)

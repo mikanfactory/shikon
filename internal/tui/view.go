@@ -39,12 +39,33 @@ func (m Model) View() string {
 		return titleStyle.Render("Workspaces") + "\n\n  Error: " + m.err.Error()
 	}
 
+	title := titleStyle.Render("Workspaces")
+	help := helpStyle.Render("q: quit  ↑↓/jk: move  enter/click: select  d: archive")
+
+	// When height is unset (zero), render every item — we don't yet know
+	// the terminal size so truncating would be premature.
+	viewportHeight := len(m.items)
+	if m.height > 0 {
+		// +1 for the explicit spacer newline written between title and items.
+		reserved := lipgloss.Height(title) + 1 + lipgloss.Height(help)
+		viewportHeight = m.height - reserved
+		if viewportHeight < 1 {
+			viewportHeight = 1
+		}
+	}
+	scrollOff := adjustScroll(m.cursor, 0, viewportHeight, len(m.items))
+	end := scrollOff + viewportHeight
+	if end > len(m.items) {
+		end = len(m.items)
+	}
+
 	var b strings.Builder
 
-	b.WriteString(titleStyle.Render("Workspaces"))
+	b.WriteString(title)
 	b.WriteString("\n")
 
-	for i, item := range m.items {
+	for i := scrollOff; i < end; i++ {
+		item := m.items[i]
 		isSelected := i == m.cursor
 		line := renderItem(item, isSelected, m.sidebarWidth)
 		if item.Selectable {
@@ -54,7 +75,7 @@ func (m Model) View() string {
 		b.WriteString("\n")
 	}
 
-	b.WriteString(helpStyle.Render("q: quit  ↑↓/jk: move  enter/click: select  d: archive"))
+	b.WriteString(help)
 
 	return zone.Scan(b.String())
 }
