@@ -33,3 +33,17 @@ func FirstSelectable(items []model.NavigableItem) int {
 	}
 	return 0
 }
+
+// adjustScroll returns a scroll offset that keeps cursor inside the viewport.
+func adjustScroll(cursor, scrollOff, viewportHeight, totalItems int) int {
+	if totalItems <= viewportHeight {
+		return 0
+	}
+	if cursor < scrollOff {
+		return cursor
+	}
+	if cursor >= scrollOff+viewportHeight {
+		return cursor - viewportHeight + 1
+	}
+	return scrollOff
+}
